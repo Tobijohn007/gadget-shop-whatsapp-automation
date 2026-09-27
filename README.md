@@ -29,6 +29,10 @@ order.
    - If approved, sends a personalized follow-up email. If rejected, the
      workflow ends with no further action.
 
+**Full workflow canvas (n8n):**
+
+![Workflow canvas](screenshots/workflow-canvas.png)
+
 ```
                      ┌──────────────────────┐
                      │  ≥ ₦300,000?          │
