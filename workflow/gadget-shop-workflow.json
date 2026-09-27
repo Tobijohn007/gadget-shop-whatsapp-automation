@@ -1,0 +1,166 @@
+{
+  "name": "Gadget Shop - New Phone Purchase Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "New Phone Sale",
+        "formDescription": "Fill this in whenever a customer buys a phone.",
+        "formFields": {
+          "values": [
+            { "fieldLabel": "Customer Name", "requiredField": true },
+            { "fieldLabel": "Customer Email", "requiredField": true },
+            { "fieldLabel": "Customer WhatsApp Number", "requiredField": true },
+            { "fieldLabel": "Phone Model", "requiredField": true },
+            { "fieldLabel": "Price (NGN)", "fieldType": "number", "requiredField": true }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [ -400, 300 ],
+      "id": "trigger-1",
+      "name": "New Phone Sale (Trigger)",
+      "webhookId": "gadget-shop-new-sale"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ $json['Price (NGN)'] }}",
+              "rightValue": 300000,
+              "operator": { "type": "number", "operation": "gte" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ -100, 300 ],
+      "id": "if-1",
+      "name": "Is price >= 300,000 naira?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@yourgadgetshop.com",
+        "toEmail": "={{ $json['Customer Email'] }}",
+        "subject": "You just made an incredible choice! 🎉",
+        "emailFormat": "html",
+        "html": "<p>Hi {{ $json['Customer Name'] }},</p><p>Thank you so much for choosing the <strong>{{ $json['Phone Model'] }}</strong> from us! You've picked one of our premium devices, and we genuinely appreciate your trust in us.</p><p>As a valued customer, expect priority support, first access to future deals, and a personal follow-up from our team to make sure you're fully set up and loving your new phone.</p><p>Welcome to the family — we're thrilled to have you!</p><p>Warm regards,<br>Your Gadget Shop Team</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [ 200, 100 ],
+      "id": "email-premium",
+      "name": "Send Premium Enticing Email"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@yourgadgetshop.com",
+        "toEmail": "={{ $json['Customer Email'] }}",
+        "subject": "Thank you for your purchase!",
+        "emailFormat": "html",
+        "html": "<p>Hi {{ $json['Customer Name'] }},</p><p>Thank you for buying the {{ $json['Phone Model'] }} from us. We hope you enjoy using it!</p><p>If you have any questions, feel free to reach out anytime.</p><p>Best,<br>Your Gadget Shop Team</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [ 200, 400 ],
+      "id": "email-standard",
+      "name": "Send Standard Appreciation Email"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "SALES_TEAM_WHATSAPP_NUMBER",
+        "message": "=New sale below 300k naira:\n{{ $json['Customer Name'] }} bought a {{ $json['Phone Model'] }} for ₦{{ $json['Price (NGN)'] }}.\n\nApprove sending a personal follow-up / discount offer to this customer?",
+        "approvalOptions": {
+          "values": { "approvalType": "double" }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [ 500, 400 ],
+      "id": "whatsapp-approval",
+      "name": "Human Approval (WhatsApp)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-2",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 800, 400 ],
+      "id": "if-approved",
+      "name": "Was it approved?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@yourgadgetshop.com",
+        "toEmail": "={{ $('New Phone Sale (Trigger)').item.json['Customer Email'] }}",
+        "subject": "A little something extra for you 🎁",
+        "emailFormat": "html",
+        "html": "<p>Hi {{ $('New Phone Sale (Trigger)').item.json['Customer Name'] }},</p><p>Our team wanted to personally follow up and see if there's anything we can do to make your experience with your new {{ $('New Phone Sale (Trigger)').item.json['Phone Model'] }} even better.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [ 1100, 300 ],
+      "id": "email-followup",
+      "name": "Send Personal Follow-up"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ 1100, 500 ],
+      "id": "noop-rejected",
+      "name": "No Further Action"
+    }
+  ],
+  "connections": {
+    "New Phone Sale (Trigger)": {
+      "main": [[ { "node": "Is price >= 300,000 naira?", "type": "main", "index": 0 } ]]
+    },
+    "Is price >= 300,000 naira?": {
+      "main": [
+        [ { "node": "Send Premium Enticing Email", "type": "main", "index": 0 } ],
+        [ { "node": "Send Standard Appreciation Email", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Send Standard Appreciation Email": {
+      "main": [[ { "node": "Human Approval (WhatsApp)", "type": "main", "index": 0 } ]]
+    },
+    "Human Approval (WhatsApp)": {
+      "main": [[ { "node": "Was it approved?", "type": "main", "index": 0 } ]]
+    },
+    "Was it approved?": {
+      "main": [
+        [ { "node": "Send Personal Follow-up", "type": "main", "index": 0 } ],
+        [ { "node": "No Further Action", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": { "instanceId": "gadget-shop-phone-purchase-workflow" }
+}

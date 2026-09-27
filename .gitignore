@@ -1,0 +1,4 @@
+# Never commit real credentials or exported n8n credentials
+.env
+credentials.json
+*.pem
